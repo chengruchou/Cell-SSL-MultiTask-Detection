@@ -1,0 +1,71 @@
+Cell-SSL-MultiTask-Detection/
+│
+├── README.md
+├── .gitignore
+├── requirements.txt
+│
+├── configs/                         # 設定檔（超重要）
+│   ├── ssl.yaml                     # SSL (DINO) 設定
+│   ├── classifier.yaml              # 分類設定
+│   ├── segmentation.yaml            # UNet 設定
+│   ├── detector_rtdetr.yaml         # 以後整合 RT-DETR 用
+│
+├── data/                            # (不放進git) 存 dataset (ignored)
+│
+├── logs/                            # 訓練log (ignored)
+│
+├── checkpoints/                     # 權重 (ignored)
+│   ├── ssl_pretrain.pth
+│   ├── classifier.pth
+│   ├── segmentor.pth
+│
+├── src/
+│   ├── datasets/
+│   │   ├── ssl_dataset.py           # SSL用多視角 augment dataset
+│   │   ├── cls_dataset.py           # 分類 dataset
+│   │   ├── seg_dataset.py           # segmentation dataset
+│   │   └── transforms/              # augmentation統一放這裡
+│   │       ├── ssl_aug.py
+│   │       ├── cls_aug.py
+│   │       └── seg_aug.py
+│   │
+│   ├── models/
+│   │   ├── backbone.py              # ResNet-50 encoder
+│   │   ├── ssl_dino.py              # Teacher/Student + head
+│   │   ├── ssl_loss.py              # DINO loss
+│   │   ├── classifier.py            # binary classification head
+│   │   ├── segmentor_unet.py        # UNet segmentor
+│   │   ├── multitask_wrapper.py     # encoder + classifier + segmentor
+│   │   └── detector_rtdetr_wrapper.py # 未來接 RT-DETR 共用 encoder
+│   │
+│   ├── training/
+│   │   ├── train_ssl.py             # SSL 訓練主程式
+│   │   ├── train_classifier.py      # 分類訓練
+│   │   ├── train_segmentor.py       # segmentation 訓練
+│   │   └── train_utils.py           # 共用: optimizer, EMA, scheduler
+│   │
+│   ├── inference/
+│   │   ├── infer_classifier.py
+│   │   ├── infer_detector.py
+│   │   ├── infer_segmentation.py
+│   │   └── infer_pipeline.py        # 分類→偵測→分割 pipeline
+│   │
+│   ├── utils/
+│   │   ├── logger.py
+│   │   ├── metric_seg.py
+│   │   ├── metric_cls.py
+│   │   ├── visualize.py             # pred overlay, seg overlay
+│   │   ├── load_ssl_backbone.py     # SSL → downstream 重載方法
+│   │   └── common.py
+│   │
+│   └── runners/
+│       ├── run_ssl.py               # 給你執行：python run_ssl.py
+│       ├── run_classifier.py
+│       ├── run_segmentor.py
+│       └── run_pipeline.py
+│
+└── scripts/
+    ├── prepare_data.py              # 建議: split dataset into train/val/test
+    ├── convert_masks.py             # mask格式轉換
+    ├── export_ssl_encoder.py        # 將 SSL encoder export 成 checkpoint
+    └── visualize_results.py
