@@ -1,0 +1,51 @@
+Test Image
+   │
+   ▼
+[1] SSL Student Backbone (Frozen Encoder)
+   │       └─ 輸出 feature map (C × H × W)
+   ▼
+[2] Binary Classifier (Positive / Negative)
+   │
+   ├── If NEGATIVE → 直接輸出 "Negative Cell"
+   │                  （不進行 detection / segmentation）
+   │
+   └── If POSITIVE →
+            ▼
+     [3] Multi-Task Heads
+            ├── Detector Head → output bounding boxes
+            └── Segmentation Head → output mask
+            ▼
+     [4] Post-process outputs (NMS, thresholding, mask blending)
+            ▼
+     [5] Final Result
+
+
+                 +---------------------------+
+                 | 1. SSL Student Backbone   |
+                 |   (Frozen Feature Encoder)|
+                 +--------------+------------+
+                                |
+                                v
+                     +----------+----------+
+                     | 2. Binary Classifier |
+                     +----------+----------+
+                                |
+       +------------------------+----------------------+
+       |                                               |
+   NEGATIVE                                      POSITIVE
+       |                                               |
+       v                                               v
+"Output: Negative"                             +-------+-------+
+                                               | Multi-task    |
+                                               | Heads (3)     |
+                                               +---+-------+---+
+                                                   |       |
+                                                   v       v
+                                          [3A] Detector   [3B] Segmentor
+                                                   |           |
+                                                   v           v
+                                                boxes        masks
+                                                   \         /
+                                                    \       /
+                                                     v     v
+                                                  Final Output

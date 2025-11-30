@@ -15,4 +15,4 @@ class SSLMicroscopyPTDataset(Dataset):
         return len(self.paths)
 
     def __getitem__(self, idx):
-        return torch.load(self.paths[idx])   # 直接讀 tensor（超快）
+        return torch.load(self.paths[idx])   
