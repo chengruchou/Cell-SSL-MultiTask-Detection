@@ -32,10 +32,10 @@ def train_ssl():
 
     loader = DataLoader(
         dataset,
-        batch_size=128,        # 5090 可以吃很大，先試 128，不夠再加
+        batch_size=8,        # 5090 可以吃很大，先試 128，不夠再加
         shuffle=True,
         drop_last=True,
-        num_workers=0,         # augment 都在 GPU，0 就夠
+        num_workers=8,         # augment 都在 GPU，0 就夠
         pin_memory=True,
     )
 
@@ -51,7 +51,7 @@ def train_ssl():
 
     print("\n===== SSL Pretraining Start =====\n")
 
-    for epoch in range(1000):
+    for epoch in range(30):
         model.train()
         loss_meter = AverageMeter()
         progress_bar = tqdm(loader, desc=f"Epoch {epoch}", ncols=100)

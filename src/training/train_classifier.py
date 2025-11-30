@@ -15,7 +15,7 @@ def train_classifier(
     data_root: str = "data/classification",
     ssl_ckpt_path: str = "checkpoints/ssl_pretrain.pth",
     epochs: int = 30,
-    batch_size: int =64,
+    batch_size: int = 8,
     lr: float = 1e-3,
     img_size: int = 224,
 ):
