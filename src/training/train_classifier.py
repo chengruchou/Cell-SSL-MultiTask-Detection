@@ -7,33 +7,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.models.ssl_dino import DinoModel
+from src.models.cell_classifier import CellClassifier
 from src.datasets.cls_dataset import build_classification_datasets
-
-
-class CellClassifier(nn.Module):
-    def __init__(self, ssl_model: DinoModel, hidden_dim: int = 512, num_classes: int = 2):
-        super().__init__()
-        # 使用 SSL 的 student backbone
-        self.backbone = ssl_model.student
-        # 冷凍 backbone 參數（不 fine-tune）
-        for p in self.backbone.parameters():
-            p.requires_grad = False
-
-        in_dim = self.backbone.out_dim  # SharedEncoder 設好的 out_dim
-
-        # MLP classifier head
-        self.head = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),   # [B, C, H, W] -> [B, C, 1, 1]
-            nn.Flatten(),              # [B, C]
-            nn.Linear(in_dim, hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, x):
-        feat = self.backbone(x)  # [B, C, H', W']
-        logits = self.head(feat) # [B, num_classes]
-        return logits
 
 
 def train_classifier(
