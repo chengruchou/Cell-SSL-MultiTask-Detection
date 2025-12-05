@@ -14,12 +14,12 @@ def build_classification_datasets(
     root/val/negative/*.png|jpg
     """
     train_dir = os.path.join(root, "train")
-    val_dir = os.path.join(root, "val")
+    val_dir = os.path.join(root, "valid")
 
     train_tf = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         # 可以加一點簡單 aug（可視需要調整或拿掉）
-        transforms.RandomHorizontalFlip(),
+        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize([0.5] * 3, [0.5] * 3),
     ])

@@ -11,15 +11,11 @@ from src.models.cell_mae_vit import MAE, CellViTBackbone, CellClassifier
 from src.datasets.cls_dataset import build_classification_datasets
 
 
-# ============================================
-# 固定參數（最乾淨的設定）
-# ============================================
-
 DATA_ROOT = "data/classification"
-MAE_CKPT = "checkpoints\ssl_mae.pth"      # 你的 MAE SSL 預訓練檔案
-IMG_SIZE = 224
-BATCH_SIZE = 8
-EPOCHS = 30
+MAE_CKPT = "checkpoints\ssl_mae_best.pth"      # 你的 MAE SSL 預訓練檔案
+IMG_SIZE = 640
+BATCH_SIZE = 32
+EPOCHS = 50
 LR = 3e-4
 FREEZE_ENCODER = False                    # 如果你想只訓練 head → 設 True
 SAVE_DIR = "checkpoints"

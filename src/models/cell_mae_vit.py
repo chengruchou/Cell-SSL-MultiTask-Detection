@@ -12,7 +12,7 @@ import torch.nn.functional as F
 class PatchEmbed(nn.Module):
     """
     將影像切成 patch，做成 token。
-    img_size: 輸入影像大小 (假設正方形)
+    img_size: 輸入影像大小 (假設正方形，用來設定預設 grid)
     patch_size: patch 邊長
     """
     def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=384):
@@ -44,6 +44,14 @@ class MLP(nn.Module):
         self.act = nn.GELU()
         self.fc2 = nn.Linear(hidden_dim, dim)
         self.drop = nn.Dropout(drop)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = self.act(x)
+            x = self.drop(x)
+            x = self.fc2(x)
+            x = self.drop(x)
+            return x
 
     def forward(self, x):
         x = self.fc1(x)
@@ -115,10 +123,38 @@ class ViTEncoder(nn.Module):
         # x: (B, C, H, W)
         B = x.shape[0]
         x = self.patch_embed(x)  # (B, N, C)
-        cls = self.cls_token.expand(B, -1, -1)  # (B, 1, C)
-        x = torch.cat((cls, x), dim=1)          # (B, 1+N, C)
-        x = x + self.pos_embed
+        B, N, C = x.shape
 
+        # CLS
+        cls = self.cls_token.expand(B, 1, -1)  # (B, 1, C)
+        x = torch.cat((cls, x), dim=1)         # (B, 1+N, C)
+
+        # ---- 對 positional embedding 做 interpolate，支援任意解析度 ----
+        # 原始 pos_embed: (1, N_base+1, C)
+        cls_pos = self.pos_embed[:, :1, :]      # (1, 1, C)
+        patch_pos = self.pos_embed[:, 1:, :]    # (1, N_base, C)
+        N_base = patch_pos.shape[1]
+        grid_size_base = int(N_base ** 0.5)     # 假設 base 是正方形 grid
+
+        # 目前實際的 patch 數量為 N，因此 grid_size_new^2 應該等於 N
+        grid_size_new = int(N ** 0.5)
+
+        # (1, N_base, C) -> (1, C, gh, gw)
+        patch_pos = patch_pos.reshape(1, grid_size_base, grid_size_base, C).permute(0, 3, 1, 2)
+        # interpolate 成新的 grid
+        patch_pos = F.interpolate(
+            patch_pos,
+            size=(grid_size_new, grid_size_new),
+            mode="bicubic",
+            align_corners=False,
+        )
+        # (1, C, gh_new, gw_new) -> (1, N_new, C)
+        patch_pos = patch_pos.permute(0, 2, 3, 1).reshape(1, grid_size_new * grid_size_new, C)
+
+        pos_embed = torch.cat([cls_pos, patch_pos], dim=1)  # (1, 1+N, C)
+        x = x + pos_embed
+
+        # transformer blocks
         for blk in self.blocks:
             x = blk(x)
 
@@ -158,14 +194,16 @@ class MAE(nn.Module):
             num_heads=num_heads,
         )
         self.mask_ratio = mask_ratio
-        num_patches = self.encoder.patch_embed.num_patches
-        self.num_patches = num_patches
+
+        # base num_patches 只用來初始化 decoder_pos_embed，之後 forward 會動態 interpolate
+        num_patches_base = self.encoder.patch_embed.num_patches
+        self.num_patches_base = num_patches_base
 
         # decoder
         self.decoder_embed = nn.Linear(embed_dim, decoder_dim, bias=True)
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_dim))
         self.decoder_pos_embed = nn.Parameter(
-            torch.zeros(1, num_patches + 1, decoder_dim)
+            torch.zeros(1, num_patches_base + 1, decoder_dim)
         )
         self.decoder_blocks = nn.ModuleList([
             TransformerBlock(decoder_dim, num_heads=4)
@@ -214,6 +252,7 @@ class MAE(nn.Module):
         # encoder
         latent = self.encoder(x)                # (B, 1+N, C)
         cls_token, patch_tokens = latent[:, :1, :], latent[:, 1:, :]
+        B, N, C_enc = patch_tokens.shape
 
         # masking
         x_keep, mask, ids_restore = self.random_masking(patch_tokens)
@@ -222,8 +261,9 @@ class MAE(nn.Module):
         dec_tokens = self.decoder_embed(x_keep)  # (B, N_keep, C_dec)
         B, N_keep, C_dec = dec_tokens.shape
 
-        # 補上 mask token
-        mask_tokens = self.mask_token.expand(B, self.num_patches - N_keep, -1)
+        # ---- 補上 mask token（用「實際 patch 數 N」而不是 base num_patches）----
+        num_mask = N - N_keep
+        mask_tokens = self.mask_token.expand(B, num_mask, C_dec)  # (B, N - N_keep, C_dec)
         dec_tokens_ = torch.cat([dec_tokens, mask_tokens], dim=1)  # (B, N, C_dec)
 
         # 還原原本 patch 的順序
@@ -231,14 +271,31 @@ class MAE(nn.Module):
             dec_tokens_,
             1,
             ids_restore.unsqueeze(-1).expand(-1, -1, C_dec),
+        )  # (B, N, C_dec)
+
+        # ---- decoder positional embedding interpolate ----
+        dec_cls_pos = self.decoder_pos_embed[:, :1, :]       # (1,1,C_dec)
+        dec_patch_pos = self.decoder_pos_embed[:, 1:, :]     # (1, N_base, C_dec)
+        N_base = dec_patch_pos.shape[1]
+        grid_base = int(N_base ** 0.5)
+        grid_new = int(N ** 0.5)
+
+        dec_patch_pos = dec_patch_pos.reshape(1, grid_base, grid_base, C_dec).permute(0, 3, 1, 2)
+        dec_patch_pos = F.interpolate(
+            dec_patch_pos,
+            size=(grid_new, grid_new),
+            mode="bicubic",
+            align_corners=False,
         )
+        dec_patch_pos = dec_patch_pos.permute(0, 2, 3, 1).reshape(1, grid_new * grid_new, C_dec)
+        dec_pos_embed = torch.cat([dec_cls_pos, dec_patch_pos], dim=1)  # (1, 1+N, C_dec)
 
         # 加上 cls
         dec_tokens_ = torch.cat(
             [self.decoder_embed(cls_token), dec_tokens_],
             dim=1
-        )
-        dec_tokens_ = dec_tokens_ + self.decoder_pos_embed
+        )  # (B, 1+N, C_dec)
+        dec_tokens_ = dec_tokens_ + dec_pos_embed
 
         # decoder transformer
         for blk in self.decoder_blocks:
@@ -401,30 +458,27 @@ class CellDetector(nn.Module):
 # --------------------------------------------------
 
 if __name__ == "__main__":
-    # 隨便造一張假影像測 pipeline 有沒有爆掉
-    imgs = torch.randn(2, 3, 224, 224)
+    # 測 224x224
+    imgs_224 = torch.randn(2, 3, 224, 224)
+    mae_224 = MAE(img_size=224, patch_size=16, in_chans=3)
+    loss_224, _, _ = mae_224.forward_loss(imgs_224)
+    print("MAE pretrain loss (224):", float(loss_224))
 
-    # 1. 建 MAE 模型（先拿來 pretrain）
-    mae = MAE(img_size=224, patch_size=16, in_chans=3)
+    # 測 640x640（示意）——如果顯存扛不住可以註解掉
+    imgs_640 = torch.randn(2, 3, 640, 640)
+    mae_640 = MAE(img_size=640, patch_size=16, in_chans=3)
+    loss_640, _, _ = mae_640.forward_loss(imgs_640)
+    print("MAE pretrain loss (640):", float(loss_640))
 
-    # pretrain 階段示意：
-    loss, _, _ = mae.forward_loss(imgs)
-    print("MAE pretrain loss:", float(loss))
-
-    # 2. 下游任務：建立共用 backbone
-    backbone = CellViTBackbone(mae, freeze_encoder=False)
-
-    # 2-1. 分類
+    backbone = CellViTBackbone(mae_224, freeze_encoder=False)
     clf = CellClassifier(backbone, num_classes=2)
-    logits = clf(imgs)
-    print("CLS logits:", logits.shape)  # (B, 2)
+    logits = clf(imgs_224)
+    print("CLS logits:", logits.shape)
 
-    # 2-2. 分割（假設輸入 224、patch 16 -> feature map 14x14 -> upsample_factor=16）
     seg = CellSegmenter(backbone, num_classes=2, upsample_factor=16)
-    seg_out = seg(imgs)
-    print("SEG out:", seg_out.shape)    # (B, 2, 224, 224)
+    seg_out = seg(imgs_224)
+    print("SEG out:", seg_out.shape)
 
-    # 2-3. 偵測
-    det = CellDetector(backbone, num_classes=1)  # 例如只偵測「某種 cell cluster」
-    det_out = det(imgs)
-    print("DET out:", det_out.shape)    # (B, 1+4, h, w)
+    det = CellDetector(backbone, num_classes=1)
+    det_out = det(imgs_224)
+    print("DET out:", det_out.shape)

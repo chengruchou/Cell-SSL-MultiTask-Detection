@@ -17,19 +17,20 @@ from sklearn.metrics import roc_curve, auc, confusion_matrix, classification_rep
 
 from src.models.cell_mae_vit import MAE, CellViTBackbone, CellClassifier as MAECellClassifier
 
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
+IMAGENET_MEAN = [0.5] * 3
+IMAGENET_STD =  [0.5] * 3
 
 
 # --------------------------------------------------
 # Dataset / Transform
 # --------------------------------------------------
-def build_test_loader(data_root, img_size=224, batch_size=64, num_workers=4):
+def build_test_loader(data_root, img_size=640, batch_size=64, num_workers=4):
     test_tf = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
+
 
     dataset = datasets.ImageFolder(root=data_root, transform=test_tf)
     loader = DataLoader(
@@ -50,7 +51,7 @@ def build_model(
     num_classes: int,
     ckpt_path: str,
     device: torch.device,
-    img_size: int = 224,
+    img_size: int = 640,
     freeze_encoder: bool = False,
 ) -> torch.nn.Module:
     """
@@ -257,7 +258,7 @@ def parse_args():
     parser.add_argument(
         "--img_size",
         type=int,
-        default=224,
+        default=640,
         help="Resize images to (img_size, img_size).",
     )
     parser.add_argument(
@@ -293,7 +294,7 @@ def parse_args():
     parser.add_argument(
         "--max_heatmaps",
         type=int,
-        default=50,
+        default=104,
         help="Max number of heatmaps to generate (starting from first samples).",
     )
     parser.add_argument(

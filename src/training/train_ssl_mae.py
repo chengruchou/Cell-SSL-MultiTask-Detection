@@ -14,9 +14,9 @@ from src.models.cell_mae_vit import MAE
 def parse_args():
     parser = argparse.ArgumentParser(description="MAE Self-Supervised Pretraining")
 
-    parser.add_argument("--data_root", type=str, required=True)
-    parser.add_argument("--img_size", type=int, default=224)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--data_root", type=str, default="data/ssl_pt")
+    parser.add_argument("--img_size", type=int, default=640)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=0.05)
@@ -31,7 +31,7 @@ def parse_args():
 def build_dataloader(args):
     from src.datasets.ssl_dataset_pt import SSLMicroscopyPTDataset
 
-    dataset = SSLMicroscopyPTDataset("data/ssl_pt")
+    dataset = SSLMicroscopyPTDataset(args.data_root)
 
 
     n_samples = len(dataset)
@@ -93,7 +93,7 @@ def main():
 
     # 4. Train — only keep best model
     best_loss = float("inf")
-    best_ckpt = os.path.join(args.save_dir, "mae_best.pth")
+    best_ckpt = os.path.join(args.save_dir, "ssl_mae_best.pth")
 
     for epoch in range(1, args.epochs + 1):
         mae.train()
