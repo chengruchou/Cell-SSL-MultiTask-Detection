@@ -425,8 +425,8 @@ def main():
         if ap is not None and ap > best_ap:
             best_ap = ap
             improved = True
-        elif ap is None and val_loss < best_val_loss:
-            improved = True
+        # elif ap is None and val_loss < best_val_loss:
+        #     improved = True
 
         if improved:
             best_val_loss = min(best_val_loss, val_loss)

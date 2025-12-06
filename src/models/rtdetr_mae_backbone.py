@@ -67,7 +67,11 @@ class MAE_RTDETR_Backbone(nn.Module):
             )
         
         # 包住你的 MAE encoder → 回傳 CLS + (B,C,h,w)
-        self.backbone = CellViTBackbone(mae, freeze_encoder=freeze)
+        self.backbone = CellViTBackbone(
+            mae,
+            freeze_encoder=False,
+            normalize_input=True, 
+        )
         self.num_channels = num_channels
 
         C = num_channels

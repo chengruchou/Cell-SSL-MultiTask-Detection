@@ -46,14 +46,6 @@ class MLP(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, dim)
         self.drop = nn.Dropout(drop)
 
-        def forward(self, x):
-            x = self.fc1(x)
-            x = self.act(x)
-            x = self.drop(x)
-            x = self.fc2(x)
-            x = self.drop(x)
-            return x
-
     def forward(self, x):
         x = self.fc1(x)
         x = self.act(x)
@@ -343,15 +335,39 @@ class CellViTBackbone(nn.Module):
     包住 MAE 的 encoder，提供：
     - cls 向量：用於分類
     - feature map：用於 seg / det
+
+    normalize_input:
+      True  -> 期待輸入是 [0,1]，在這裡做 (x - mean) / std
+      False -> 直接把 x 丟進 encoder（例如 classification pipeline 已經在 Dataset 做 Normalize）
     """
-    def __init__(self, mae: MAE, freeze_encoder: bool = False):
+    def __init__(
+        self,
+        mae: MAE,
+        freeze_encoder: bool = False,
+        normalize_input: bool = False,          # NEW
+        mean=(0.5, 0.5, 0.5),                   # NEW
+        std=(0.5, 0.5, 0.5),                    # NEW
+    ):
         super().__init__()
         self.encoder = mae.encoder
         if freeze_encoder:
             for p in self.encoder.parameters():
                 p.requires_grad = False
 
+        # NEW: 是否在這裡做 Normalize（方便和 SSL / classification 對齊）
+        self.normalize_input = normalize_input
+        mean = torch.tensor(mean).view(1, 3, 1, 1)
+        std = torch.tensor(std).view(1, 3, 1, 1)
+        self.register_buffer("mean", mean)
+        self.register_buffer("std", std)
+
     def forward(self, x):
+        # x: (B, 3, H, W)
+        if self.normalize_input:
+            # 現在 dataloader 給的是 0~1（ConvertPILImage(scale=True)）
+            # 和 classification 的 Normalize([0.5]*3, [0.5]*3) 對齊 → [-1,1]
+            x = (x - self.mean) / self.std
+
         tokens = self.encoder(x)      # (B, 1+N, C)
         cls = tokens[:, 0]            # (B, C)
         patch_tokens = tokens[:, 1:]  # (B, N, C)
@@ -471,7 +487,7 @@ if __name__ == "__main__":
     loss_640, _, _ = mae_640.forward_loss(imgs_640)
     print("MAE pretrain loss (640):", float(loss_640))
 
-    backbone = CellViTBackbone(mae_224, freeze_encoder=False)
+    backbone = CellViTBackbone(mae_224, freeze_encoder=False, normalize_input=False)
     clf = CellClassifier(backbone, num_classes=2)
     logits = clf(imgs_224)
     print("CLS logits:", logits.shape)
