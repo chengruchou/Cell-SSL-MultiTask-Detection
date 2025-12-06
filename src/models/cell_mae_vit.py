@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from src.rtdetrv2_pytorch.src.core.workspace import register
 
 
 # --------------------------------------------------
@@ -165,7 +166,7 @@ class ViTEncoder(nn.Module):
 # --------------------------------------------------
 # MAE：Self-Supervised Pretrain
 # --------------------------------------------------
-
+@register()
 class MAE(nn.Module):
     """
     簡化版 MAE：

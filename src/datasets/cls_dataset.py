@@ -4,7 +4,7 @@ from torchvision import datasets, transforms
 
 def build_classification_datasets(
     root: str = "data/classification",
-    img_size: int = 224,
+    img_size: int = 640,
 ):
     """
     預期資料結構：

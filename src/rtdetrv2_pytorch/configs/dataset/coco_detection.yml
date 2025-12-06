@@ -10,7 +10,7 @@ evaluator:
 # num_classes: 91
 # remap_mscoco_category: False
 
-num_classes: 80
+num_classes: 1
 remap_mscoco_category: True
 
 
@@ -18,8 +18,8 @@ train_dataloader:
   type: DataLoader
   dataset: 
     type: CocoDetection
-    img_folder: ./dataset/coco/train2017/
-    ann_file: ./dataset/coco/annotations/instances_train2017.json
+    img_folder: \data\detection\train\
+    ann_file: .\data\detection\annotations\train_annotations.coco.json
     return_masks: False
     transforms:
       type: Compose
@@ -35,8 +35,8 @@ val_dataloader:
   type: DataLoader
   dataset: 
     type: CocoDetection
-    img_folder: ./dataset/coco/val2017/
-    ann_file: ./dataset/coco/annotations/instances_val2017.json
+    img_folder: .\data\detection\valid\
+    ann_file: .\data\detection\annotations\valid_annotations.coco.json
     return_masks: False
     transforms:
       type: Compose
