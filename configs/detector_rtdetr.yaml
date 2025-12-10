@@ -111,3 +111,13 @@ val_dataloader:
   dataset:
     img_folder: ./data/detection/valid
     ann_file: ./data/detection/annotations/valid_annotations.coco.json
+
+semi_supervised:
+  unlabeled_img_folder: ./data/unlabeled
+  batch_size: 2
+  num_workers: 4
+  pseudo_score_thr: 0.5
+  max_pseudo: 200
+  lambda_u: 1.0
+  unsup_warmup_epochs: 5
+  ema_decay: 0.999
