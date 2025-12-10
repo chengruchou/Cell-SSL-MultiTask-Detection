@@ -12,6 +12,7 @@ def parse_args():
     ap.add_argument("--det-ckpt", required=True)
     ap.add_argument("--clf-thr", type=float, default=0.5)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--use-amp ", action="store_true", help="Use automatic mixed precision if supported")
     return ap.parse_args()
 
 

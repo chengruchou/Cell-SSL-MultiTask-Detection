@@ -1,8 +1,17 @@
 images: data/segmentation/images
 masks: data/segmentation/masks
+confs: data/segmentation/confidences
+val_images: null
+val_masks: null
+val_confs: null
+img_size: 640
 batch_size: 2
 epochs: 1
+lr: 1e-3
+num_workers: 4
+mae_ckpt: null
 output: checkpoints/segmentor_best.pth
+use_amp: false
 runner: src/runners/run_segmentor.py
 em:
   iterations: 1

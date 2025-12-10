@@ -432,7 +432,11 @@ def main():
             best_val_loss = min(best_val_loss, val_loss)
             best_path = os.path.join(output_dir, "best.pth")
             torch.save(state, best_path)
-            print(f"[INFO] New best model saved at: {best_path}")
+            ckpt_dir = "checkpoints"
+            os.makedirs(ckpt_dir, exist_ok=True)
+            best_ckpt = os.path.join(ckpt_dir, "detector_best.pth")
+            torch.save(state, best_ckpt)
+            print(f"[INFO] New best model saved at: {best_path} (and copied to {best_ckpt})")
 
     print("[INFO] Training finished.")
 

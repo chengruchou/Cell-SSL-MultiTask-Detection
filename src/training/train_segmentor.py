@@ -158,6 +158,9 @@ def main(input_args=None):
         if val_iou > best_iou:
             best_iou = val_iou
             save_ckpt(state, args.output, "best.pth")
+            ckpt_dir = "checkpoints"
+            os.makedirs(ckpt_dir, exist_ok=True)
+            torch.save(state, os.path.join(ckpt_dir, "segmentor_best.pth"))
 
         print(f"[Epoch {epoch}] train_loss={tr_loss:.4f} val_loss={val_loss:.4f} val_iou={val_iou:.4f} val_dice={val_dice:.4f}")
 
