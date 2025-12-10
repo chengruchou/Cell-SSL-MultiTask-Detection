@@ -1,0 +1,4 @@
+classifier_checkpoint: checkpoints/classifier_best.pth
+detector_checkpoint: checkpoints/detector_best.pth
+segmentor_checkpoint: checkpoints/segmentor_best.pth
+runner: src/runners/run_pipeline.py

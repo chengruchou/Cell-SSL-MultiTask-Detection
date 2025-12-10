@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from src.utils.common import get_normalization
 
 import matplotlib
 matplotlib.use("Agg")  # headless
@@ -17,10 +18,6 @@ from sklearn.metrics import roc_curve, auc, confusion_matrix, classification_rep
 
 from src.models.ssl_dino import DinoModel
 from src.models.cell_classifier import CellClassifier
-
-
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 # --------------------------------------------------
@@ -34,10 +31,11 @@ def build_test_loader(data_root, img_size=224, batch_size=64, num_workers=4):
       - ToTensor
       - ImageNet normalize
     """
+    mean, std = get_normalization("classification")
     test_tf = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        transforms.Normalize(mean=mean, std=std),
     ])
 
     dataset = datasets.ImageFolder(root=data_root, transform=test_tf)

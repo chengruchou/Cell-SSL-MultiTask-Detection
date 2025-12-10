@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from src.utils.common import get_normalization
 
 import matplotlib
 matplotlib.use("Agg")  # headless
@@ -17,18 +18,15 @@ from sklearn.metrics import roc_curve, auc, confusion_matrix, classification_rep
 
 from src.models.cell_mae_vit import MAE, CellViTBackbone, CellClassifier as MAECellClassifier
 
-IMAGENET_MEAN = [0.5] * 3
-IMAGENET_STD =  [0.5] * 3
-
-
 # --------------------------------------------------
 # Dataset / Transform
 # --------------------------------------------------
 def build_test_loader(data_root, img_size=640, batch_size=64, num_workers=4):
+    mean, std = get_normalization("classification")
     test_tf = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        transforms.Normalize(mean=mean, std=std),
     ])
 
 
@@ -150,8 +148,9 @@ def save_roc_curve(y_true, y_scores, pos_idx: int, class_names, out_path: str):
 def tensor_to_rgb_image(tensor: torch.Tensor) -> np.ndarray:
     if tensor.ndim != 3:
         raise ValueError("Expected tensor shape (3, H, W)")
-    mean = torch.tensor(IMAGENET_MEAN, device=tensor.device).view(3, 1, 1)
-    std = torch.tensor(IMAGENET_STD, device=tensor.device).view(3, 1, 1)
+    mean, std = get_normalization("classification")
+    mean = torch.tensor(mean, device=tensor.device).view(3, 1, 1)
+    std = torch.tensor(std, device=tensor.device).view(3, 1, 1)
     img = tensor * std + mean
     img = img.clamp(0.0, 1.0)
     img = img.detach().cpu().permute(1, 2, 0).numpy()

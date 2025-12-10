@@ -1,0 +1,8 @@
+images: data/segmentation/images
+masks: data/segmentation/masks
+batch_size: 2
+epochs: 1
+output: checkpoints/segmentor_best.pth
+runner: src/runners/run_segmentor.py
+em:
+  iterations: 1

@@ -1,0 +1,6 @@
+dataset: data/classification
+normalization: classification
+batch_size: 4
+epochs: 1
+output: checkpoints/classifier_best.pth
+runner: src/runners/run_classifier.py
