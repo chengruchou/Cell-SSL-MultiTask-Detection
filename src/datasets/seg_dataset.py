@@ -4,7 +4,7 @@ All transforms must keep spatial alignment.
 """
 
 import os
-from typing import Callable, Tuple
+from typing import Callable
 
 import numpy as np
 from PIL import Image

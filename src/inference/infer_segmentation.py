@@ -12,7 +12,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from src.models.cell_mae_vit import MAE, CellViTBackbone, CellSegmenter
-from src.segmentation.transforms import build_default_transforms
+from src.datasets.transforms.seg_aug import build_default_transforms
 from src.utils.common import get_normalization
 
 

@@ -28,18 +28,15 @@ def masked_bce_dice_loss(
     if confidence.dtype != torch.float32:
         confidence = confidence.float()
 
-    # Build valid mask from confidence and ignore_index if encoded in target
     valid = confidence.clone()
     if ignore_index is not None:
         ignore_mask = (target == ignore_index).float()
         valid = valid * (1.0 - ignore_mask)
         target = target * (1.0 - ignore_mask)
 
-    # BCE
     bce = F.binary_cross_entropy(prob, target, reduction="none")
     bce = (bce * valid).sum() / (valid.sum() + eps)
 
-    # Dice
     prob_flat = prob.view(prob.size(0), -1)
     target_flat = target.view(target.size(0), -1)
     valid_flat = valid.view(valid.size(0), -1)

@@ -1,6 +1,10 @@
 dataset: data/classification
-normalization: classification
-batch_size: 4
-epochs: 1
+img_size: 640
+batch_size: 16
+epochs: 50
+lr: 3e-4
+num_workers: 8
+ssl_ckpt_path: checkpoints/ssl_pretrain.pth   # for dino-based classifier
+mae_ckpt: checkpoints/ssl_mae_best.pth        # for mae-based classifier
 output: checkpoints/classifier_best.pth
 runner: src/runners/run_classifier.py

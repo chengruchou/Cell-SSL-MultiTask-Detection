@@ -9,7 +9,7 @@ import torch
 from src.segmentation.feature_extractor import build_backbone, extract_features
 from src.segmentation.cluster_pseudolabel import generate_pseudo_for_dir
 from src.segmentation.refine_mask import refine_dir
-from src.training.segmentation.train_segmentor import train as train_segmentor
+from src.training.train_segmentor import train as train_segmentor
 
 
 def parse_args():

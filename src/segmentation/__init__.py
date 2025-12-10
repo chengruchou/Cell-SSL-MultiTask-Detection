@@ -1,7 +1,7 @@
-from src.segmentation.seg_dataset import PseudoSegDataset
-from src.segmentation import transforms
-from src.segmentation import masked_losses
-from src.training.segmentation import train_segmentor
+from src.datasets.seg_dataset import PseudoSegDataset
+from src.datasets.transforms import seg_aug as transforms
+from src.utils import masked_losses
+from src.training import train_segmentor
 from src.segmentation import em_loop
 
 __all__ = [

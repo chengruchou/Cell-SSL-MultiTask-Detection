@@ -1,6 +1,6 @@
 import argparse
 
-from src.training.segmentation.train_segmentor import main as train_segmentor_main
+from src.training.train_segmentor import main as train_segmentor_main
 
 
 def parse_args():

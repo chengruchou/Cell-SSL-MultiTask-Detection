@@ -1,36 +1,26 @@
 import argparse
-
-from src.training.train_classifier import main as train_classifier_main
+import subprocess
+import sys
 
 
 def parse_args():
     ap = argparse.ArgumentParser("Run classifier trainer")
-    ap.add_argument("--config", type=str, default=None)
-    ap.add_argument("--device", type=str, default="cuda")
-    ap.add_argument("--epochs", type=int, default=None)
-    ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--output-dir", type=str, default=None)
-    ap.add_argument("--resume", type=str, default=None)
-    ap.add_argument("--use-amp", action="store_true")
+    ap.add_argument("--config", type=str, default=None, help="YAML config path")
+    ap.add_argument("--mode", choices=["dino", "mae"], default="mae", help="Which trainer to run")
+    ap.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed through")
+    ap.add_argument("--use-amp ", action="store_true", help="Use automatic mixed precision if supported")
     return ap.parse_args()
 
 
 def main():
     args = parse_args()
-    argv = []
+    module = "src.training.train_classifier" if args.mode == "dino" else "src.training.train_classifier_mae"
+    cmd = [sys.executable, "-m", module]
     if args.config:
-        argv += ["-c", args.config]
-    argv += ["--device", args.device]
-    if args.epochs is not None:
-        argv += ["--epochs", str(args.epochs)]
-    argv += ["--seed", str(args.seed)]
-    if args.output_dir:
-        argv += ["--output-dir", args.output_dir]
-    if args.resume:
-        argv += ["--resume", args.resume]
-    if args.use_amp:
-        argv += ["--use-amp"]
-    train_classifier_main(argv)
+        cmd += ["-c", args.config]
+    if args.extra_args:
+        cmd += args.extra_args
+    subprocess.run(cmd, check=True)
 
 
 if __name__ == "__main__":

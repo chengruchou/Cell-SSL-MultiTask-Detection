@@ -144,8 +144,9 @@ def tensor_to_rgb_image(tensor: torch.Tensor) -> np.ndarray:
     """
     if tensor.ndim != 3:
         raise ValueError("Expected tensor shape (3, H, W)")
-    mean = torch.tensor(IMAGENET_MEAN, device=tensor.device).view(3, 1, 1)
-    std = torch.tensor(IMAGENET_STD, device=tensor.device).view(3, 1, 1)
+    mean, std = get_normalization("classification")
+    mean = torch.tensor(mean, device=tensor.device).view(3, 1, 1)
+    std = torch.tensor(std, device=tensor.device).view(3, 1, 1)
     img = tensor * std + mean
     img = img.clamp(0.0, 1.0)
     img = img.detach().cpu().permute(1, 2, 0).numpy()

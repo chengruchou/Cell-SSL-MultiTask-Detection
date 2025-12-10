@@ -7,8 +7,8 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-from src.segmentation.transforms import build_default_transforms
-from src.segmentation.train_segmentor import build_model
+from src.datasets.transforms.seg_aug import build_default_transforms
+from src.training.train_segmentor import build_model
 
 
 def parse_args():
