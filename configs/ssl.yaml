@@ -1,0 +1,11 @@
+data_root: data/ssl_pt
+mode: mae              # run_ssl.py --mode mae
+img_size: 640
+batch_size: 16
+epochs: 100
+lr: 1e-4
+weight_decay: 0.05
+mask_ratio: 0.75
+num_workers: 8
+device: cuda
+save_dir: checkpoints
