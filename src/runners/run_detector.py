@@ -4,16 +4,17 @@ import sys
 
 
 def parse_args():
-    ap = argparse.ArgumentParser("Run detector trainer")
-    ap.add_argument("--config", type=str, default="configs/detector_rtdetr.yaml")
-    ap.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed through")
-    ap.add_argument("--use-amp ", action="store_true", help="Use automatic mixed precision if supported")
-    return ap.parse_args()
-
+    parser = argparse.ArgumentParser("Run detector trainer")
+    parser.add_argument("--config", type=str, default="configs/detector_rtdetr.yaml")
+    parser.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed through")
+    parser.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision if supported")
+    return parser.parse_args()
 
 def main():
     args = parse_args()
-    cmd = [sys.executable, "-m", "src.training.train_detector", "-c", args.config]
+    cmd = [sys.executable, "-m", "src.training.train_detector", "--config", args.config]
+    if args.use_amp:
+        cmd += ["--use-amp"]
     if args.extra_args:
         cmd += args.extra_args
     subprocess.run(cmd, check=True)

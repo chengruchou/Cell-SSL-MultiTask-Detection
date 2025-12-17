@@ -6,6 +6,7 @@ import yaml
 import torch
 from torch.utils.data import DataLoader
 from torch import optim, nn
+from tqdm import tqdm
 
 from src.models.cell_mae_vit import MAE, CellViTBackbone, CellClassifier
 from src.datasets.cls_dataset import build_classification_datasets
@@ -16,7 +17,7 @@ def parse_args():
     parser.add_argument("-c", "--config", type=str, default=None, help="Path to YAML config")
     parser.add_argument("--data_root", type=str, default="data/classification")
     parser.add_argument("--img_size", type=int, default=640)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
@@ -25,6 +26,7 @@ def parse_args():
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--save_dir", type=str, default="checkpoints")
+    parser.add_argument("--use_amp", action="store_true", default=True, help="Use automatic mixed precision")
     return parser.parse_args()
 
 
@@ -115,7 +117,7 @@ def main(cfg=None):
         correct = 0
         total = 0
 
-        for imgs, labels in train_loader:
+        for imgs, labels in tqdm(train_loader, desc=f"Epoch {epoch} [Train]", ncols=100):
             imgs = imgs.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
 
@@ -140,7 +142,7 @@ def main(cfg=None):
         val_total = 0
 
         with torch.no_grad():
-            for imgs, labels in val_loader:
+            for imgs, labels in tqdm(val_loader, desc=f"Epoch {epoch} [Val]", ncols=100, leave=False):
                 imgs = imgs.to(device, non_blocking=True)
                 labels = labels.to(device, non_blocking=True)
 

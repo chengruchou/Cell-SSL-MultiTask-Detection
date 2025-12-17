@@ -113,7 +113,7 @@ def parse_args(input_args=None):
     ap.add_argument("--mae-ckpt", type=str, default=None)
     ap.add_argument("--device", type=str, default="cuda")
     ap.add_argument("--output", type=str, default="./logs/seg")
-    ap.add_argument("--use-amp", action="store_true")
+    ap.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision")
     return ap.parse_args(input_args)
 
 

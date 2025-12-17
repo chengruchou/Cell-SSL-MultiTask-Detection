@@ -14,17 +14,18 @@ from src.datasets.cls_dataset import build_classification_datasets
 
 
 def parse_args():
-    ap = argparse.ArgumentParser("Classifier training")
-    ap.add_argument("-c", "--config", type=str, default=None)
-    ap.add_argument("--data_root", type=str, default="data/classification")
-    ap.add_argument("--ssl_ckpt_path", type=str, default="checkpoints/ssl_pretrain.pth")
-    ap.add_argument("--epochs", type=int, default=30)
-    ap.add_argument("--batch_size", type=int, default=8)
-    ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--img_size", type=int, default=224)
-    ap.add_argument("--num_workers", type=int, default=8)
-    ap.add_argument("--output", type=str, default="checkpoints/cell_classifier_best.pth")
-    return ap.parse_args()
+    parser = argparse.ArgumentParser("Classifier training")
+    parser.add_argument("-c", "--config", type=str, default=None)
+    parser.add_argument("--data_root", type=str, default="data/classification")
+    parser.add_argument("--ssl_ckpt_path", type=str, default="checkpoints/ssl_pretrain.pth")
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--img_size", type=int, default=224)
+    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--output", type=str, default="checkpoints/cell_classifier_best.pth")
+    parser.add_argument("--use_amp", action="store_true", default=True, help="Use automatic mixed precision")
+    return parser.parse_args()
 
 
 def load_cfg(args):

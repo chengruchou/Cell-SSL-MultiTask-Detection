@@ -6,6 +6,7 @@ import yaml
 import torch
 from torch.utils.data import DataLoader
 from torch import optim
+from tqdm import tqdm
 
 from src.models.cell_mae_vit import MAE
 
@@ -23,6 +24,7 @@ def parse_args():
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--save_dir", type=str, default="checkpoints")
+    parser.add_argument("--use_amp", action="store_true", default=True, help="Use automatic mixed precision")
     return parser.parse_args()
 
 
@@ -114,7 +116,7 @@ def main(cfg=None):
         mae.train()
         epoch_loss = 0.0
 
-        for step, batch in enumerate(loader):
+        for batch in tqdm(loader, desc=f"Epoch {epoch} [Train]", ncols=100):
             imgs = batch[0] if isinstance(batch, (list, tuple)) else batch
             imgs = imgs.to(device)
 

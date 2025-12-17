@@ -68,10 +68,6 @@ def parse_args():
         action="store_true",
         help="Only run validation once, no training.",
     )
-
-    # 如果你之後想加入像原版一樣的 yaml override，可以再加:
-    # parser.add_argument("-u", "--update", nargs='+', help="update yaml config")
-
     return parser.parse_args()
 
 

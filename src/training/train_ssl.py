@@ -17,16 +17,17 @@ from src.models.ssl_loss import DinoLoss
 
 
 def parse_args():
-    ap = argparse.ArgumentParser("DINO SSL pretraining")
-    ap.add_argument("--config", type=str, default=None, help="Path to YAML config")
-    ap.add_argument("--data_root", type=str, default="data/ssl_pt")
-    ap.add_argument("--img_size", type=int, default=640)
-    ap.add_argument("--batch_size", type=int, default=16)
-    ap.add_argument("--epochs", type=int, default=30)
-    ap.add_argument("--lr", type=float, default=1e-4)
-    ap.add_argument("--num_workers", type=int, default=8)
-    ap.add_argument("--output", type=str, default="checkpoints/ssl_pretrain.pth")
-    return ap.parse_args()
+    parser = argparse.ArgumentParser("DINO SSL pretraining")
+    parser.add_argument("--config", type=str, default=None, help="Path to YAML config")
+    parser.add_argument("--data_root", type=str, default="data/ssl_pt")
+    parser.add_argument("--img_size", type=int, default=640)
+    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--output", type=str, default="checkpoints/ssl_pretrain.pth")
+    parser.add_argument("--use_amp", action="store_true", default=True, help="Use automatic mixed precision")
+    return parser.parse_args()
 
 
 def load_cfg(args):

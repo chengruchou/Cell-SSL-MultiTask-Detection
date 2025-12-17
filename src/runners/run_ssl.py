@@ -4,12 +4,13 @@ import sys
 
 
 def parse_args():
-    ap = argparse.ArgumentParser("Run SSL pretraining")
-    ap.add_argument("--mode", choices=["dino", "mae"], default="mae", help="Which trainer to run")
-    ap.add_argument("--config", type=str, default=None, help="YAML config path")
-    ap.add_argument("--data-root", type=str, default=None, help="Override data root")
-    ap.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed through")
-    return ap.parse_args()
+    parser = argparse.ArgumentParser("Run SSL pretraining")
+    parser.add_argument("--mode", choices=["dino", "mae"], default="mae", help="Which trainer to run")
+    parser.add_argument("--config", type=str, default=None, help="YAML config path")
+    parser.add_argument("--data-root", type=str, default=None, help="Override data root")
+    parser.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed through")
+    parser.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision if supported")
+    return parser.parse_args()
 
 
 def main():
@@ -20,6 +21,8 @@ def main():
         cmd += ["--config", args.config]
     if args.data_root:
         cmd += ["--data_root", args.data_root]
+    if args.use_amp:
+        cmd += ["--use_amp"]
     if args.extra_args:
         cmd += args.extra_args
     subprocess.run(cmd, check=True)

@@ -4,17 +4,16 @@ import sys
 
 
 def parse_args():
-    ap = argparse.ArgumentParser("Pipeline runner: clf -> (det + seg)")
-    ap.add_argument("--image", required=True)
-    ap.add_argument("--clf-ckpt", required=True)
-    ap.add_argument("--seg-ckpt", required=True)
-    ap.add_argument("--det-config", default="configs/detector_rtdetr.yaml")
-    ap.add_argument("--det-ckpt", required=True)
-    ap.add_argument("--clf-thr", type=float, default=0.5)
-    ap.add_argument("--device", default="cuda")
-    ap.add_argument("--use-amp ", action="store_true", help="Use automatic mixed precision if supported")
-    return ap.parse_args()
-
+    parser = argparse.ArgumentParser("Pipeline runner: clf -> (det + seg)")
+    parser.add_argument("--image", required=True)
+    parser.add_argument("--clf-ckpt", required=True)
+    parser.add_argument("--seg-ckpt", required=True)
+    parser.add_argument("--det-config", default="configs/detector_rtdetr.yaml")
+    parser.add_argument("--det-ckpt", required=True)
+    parser.add_argument("--clf-thr", type=float, default=0.5)
+    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision if supported")
+    return parser.parse_args()
 
 def main():
     args = parse_args()
@@ -36,6 +35,8 @@ def main():
         str(args.clf_thr),
         "--device",
         args.device,
+        "--use-amp",
+        str(args.use_amp)
     ]
     subprocess.run(cmd, check=True)
 

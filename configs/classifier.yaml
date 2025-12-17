@@ -1,6 +1,6 @@
 dataset: data/classification
 img_size: 640
-batch_size: 16
+batch_size: 24
 epochs: 50
 lr: 3e-4
 num_workers: 8
