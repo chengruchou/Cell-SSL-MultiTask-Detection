@@ -14,7 +14,7 @@ def main():
     args = parse_args()
     cmd = [sys.executable, "-m", "src.training.train_detector_semi", "--config", args.config]
     if args.use_amp:
-        cmd += ["--use_amp"]
+        cmd += ["--use-amp"]
     if args.extra_args:
         cmd += args.extra_args
     subprocess.run(cmd, check=True)

@@ -178,7 +178,6 @@ def main():
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", type=str, default=None)
-    parser.add_argument("--use-amp", action="store_true")
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision")
     args = parser.parse_args()
