@@ -114,7 +114,7 @@ val_dataloader:
 
 semi_supervised:
   unlabeled_img_folder: ./data/unlabeled
-  batch_size: 2
+  batch_size: 4
   num_workers: 4
   pseudo_score_thr: 0.5
   max_pseudo: 200

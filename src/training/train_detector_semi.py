@@ -21,6 +21,17 @@ from src.rtdetrv2_pytorch.src.optim import ModelEMA
 # Helpers
 # --------------------------------------------------------------
 
+def unlabeled_collate_fn(batch):
+    imgs_w, imgs_s, orig_sizes, paths = zip(*batch)
+    orig_sizes = torch.tensor(orig_sizes, dtype=torch.long)
+    return (
+        torch.stack(imgs_w, dim=0),
+        torch.stack(imgs_s, dim=0),
+        orig_sizes,
+        paths,
+    )
+
+
 def build_unlabeled_loader(cfg_yaml: dict):
     semi_cfg = cfg_yaml.get("semi_supervised", {})
     data_root = semi_cfg.get("unlabeled_img_folder", "./data/unlabeled")
@@ -52,15 +63,15 @@ def build_unlabeled_loader(cfg_yaml: dict):
         strong_transform=strong_tf,
     )
 
-    def collate_fn(batch):
-        imgs_w, imgs_s, orig_sizes, paths = zip(*batch)
-        orig_sizes = torch.tensor(orig_sizes, dtype=torch.long)
-        return (
-            torch.stack(imgs_w, dim=0),
-            torch.stack(imgs_s, dim=0),
-            orig_sizes,
-            paths,
-        )
+    # def collate_fn(batch):
+    #     imgs_w, imgs_s, orig_sizes, paths = zip(*batch)
+    #     orig_sizes = torch.tensor(orig_sizes, dtype=torch.long)
+    #     return (
+    #         torch.stack(imgs_w, dim=0),
+    #         torch.stack(imgs_s, dim=0),
+    #         orig_sizes,
+    #         paths,
+    #     )
 
     loader = DataLoader(
         dataset,
@@ -68,7 +79,7 @@ def build_unlabeled_loader(cfg_yaml: dict):
         shuffle=True,
         num_workers=num_workers,
         pin_memory=True,
-        collate_fn=collate_fn,
+        collate_fn=unlabeled_collate_fn,
     )
     return loader
 
@@ -101,7 +112,7 @@ def train_one_epoch_semi(
     model.train()
     criterion.train()
     ema.module.eval()
-
+    # print(f"[INFO] Starting semi-supervised training epoch {epoch}..., unlabeled_iter length: {len(unlabeled_loader)}")
     unlabeled_iter = cycle(unlabeled_loader)
     running_sup = 0.0
     running_unsup = 0.0
@@ -175,10 +186,12 @@ def main():
     parser = argparse.ArgumentParser("Semi-supervised RT-DETR trainer")
     parser.add_argument("-c", "--config", type=str, default="configs/detector_rtdetr.yaml")
     parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--epochs", type=int, default=72)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument("--output-dir", type=str, default=None)
+    parser.add_argument("--teacher-ckpt", type=str, default="checkpoints/detector_best.pth", help="Pretrained RT-DETR checkpoint used to initialize teacher")
     parser.add_argument("--use-amp", action="store_true", default=True, help="Use automatic mixed precision")
     args = parser.parse_args()
 
@@ -204,6 +217,27 @@ def main():
     ema_decay = cfg.yaml_cfg.get("semi_supervised", {}).get("ema_decay", 0.999)
     ema = ModelEMA(model, decay=ema_decay)
     ema.to(device)
+    # --------------------------------------------------
+    # Load pretrained RT-DETR as teacher
+    # --------------------------------------------------
+    if args.teacher_ckpt is not None:
+        print(f"[INFO] Loading pretrained teacher from {args.teacher_ckpt}")
+        ckpt = torch.load(args.teacher_ckpt, map_location="cpu")
+
+        # 相容你目前 save_checkpoint 的格式
+        if isinstance(ckpt, dict) and "model" in ckpt:
+            teacher_state = ckpt["model"]
+        else:
+            teacher_state = ckpt
+
+        missing, unexpected = ema.module.load_state_dict(
+            teacher_state, strict=False
+        )
+        print(
+            f"[INFO] Teacher loaded. "
+            f"Missing keys: {len(missing)}, Unexpected keys: {len(unexpected)}"
+        )
+
 
     scaler = torch.amp.GradScaler('cuda') if (args.use_amp and device.type == "cuda") else None
     epochs = cfg.yaml_cfg.get("epochs", cfg.yaml_cfg.get("epoches"))
@@ -216,7 +250,7 @@ def main():
     lambda_u_max = semi_cfg.get("lambda_u", 1.0)
     warmup_epochs = semi_cfg.get("unsup_warmup_epochs", 5)
     max_pseudo = semi_cfg.get("max_pseudo", None)
-
+    # print(f"cfg.yaml_cfg[collate_fn]: {cfg.yaml_cfg.get('collate_fn', None)}")
     unlabeled_loader = build_unlabeled_loader(cfg.yaml_cfg)
 
     # resume (student + ema)
@@ -241,10 +275,8 @@ def main():
         best_ap = ckpt.get("best_ap", -1.0)
 
     print("[INFO] Starting semi-supervised training...")
-
     for epoch in range(start_epoch, epochs + 1):
         lambda_u = ramp_weight(lambda_u_max, epoch, warmup_epochs)
-
         train_one_epoch_semi(
             model=model,
             criterion=criterion,
@@ -314,8 +346,21 @@ def main():
 
         if improved:
             best_val_loss = min(best_val_loss, val_loss)
+
+            # 用 EMA 權重存 best
+            best_state = deepcopy(state)
+            best_state["model"] = ema.module.state_dict()
+
             best_path = os.path.join(output_dir, "best_semi.pth")
-            torch.save(state, best_path)
+            torch.save(best_state, best_path)
+
+            ckpt_dir = "checkpoints"
+            os.makedirs(ckpt_dir, exist_ok=True)
+            best_ckpt = os.path.join(ckpt_dir, "detector_best_semi.pth")
+            torch.save(best_state, best_ckpt)
+
+            print(f"[INFO] New best EMA model (semi) saved at: {best_ckpt}")
+
             ckpt_dir = "checkpoints"
             os.makedirs(ckpt_dir, exist_ok=True)
             best_ckpt = os.path.join(ckpt_dir, "detector_best_semi.pth")

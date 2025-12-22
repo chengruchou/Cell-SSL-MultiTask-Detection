@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("-c", "--config", type=str, default=None, help="Path to YAML config")
     parser.add_argument("--data_root", type=str, default="data/classification")
     parser.add_argument("--img_size", type=int, default=640)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=24)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
