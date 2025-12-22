@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from PIL import Image, ImageDraw
 from src.utils.common import get_normalization
 
 import matplotlib
@@ -233,13 +234,13 @@ def parse_args():
     parser.add_argument(
         "--data_root",
         type=str,
-        default=r"data\classification\test",
+        default="data/classification/test",
         help="ImageFolder root for TEST set (must contain subfolders per class).",
     )
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="checkpoints\cell_classifier_mae_best.pth",
+        default="checkpoints/cell_classifier_mae_best.pth",
         help="Path to trained MAE classifier checkpoint.",
     )
     parser.add_argument(
@@ -301,6 +302,12 @@ def parse_args():
         action="store_true",
         help="If set, do NOT generate heatmaps.",
     )
+    parser.add_argument(
+        "--save_vis_dir",
+        type=str,
+        default="output/cls_mae",
+        help="Directory to save per-image classification visualization on original image.",
+    )
     return parser.parse_args()
 
 
@@ -343,6 +350,7 @@ def main():
     all_probs = []
     all_paths = []
     heatmap_samples = []
+    os.makedirs(args.save_vis_dir, exist_ok=True)
 
     model.eval()
     ptr = 0
@@ -364,6 +372,22 @@ def main():
             for b in range(batch_size):
                 path, _ = test_dataset.samples[ptr + b]
                 all_paths.append(path)
+
+                # save visualization on original image
+                prob_vec = probs[b].detach().cpu()
+                pred_prob = float(prob_vec[preds[b]])
+                base_name = os.path.basename(path)
+                stem, ext = os.path.splitext(base_name)
+                try:
+                    orig_img = Image.open(path).convert("RGB")
+                    draw = ImageDraw.Draw(orig_img)
+                    text = f"{class_names[preds[b]]}: {pred_prob:.3f} (true: {class_names[labels[b]]})"
+                    draw.rectangle([0, 0, orig_img.width, 20], fill="black")
+                    draw.text((4, 2), text, fill="red")
+                    out_path = os.path.join(args.save_vis_dir, f"{stem}_pred{ext}")
+                    orig_img.save(out_path)
+                except Exception as e:
+                    print(f"[WARN] Failed to save vis for {path}: {e}")
 
                 heatmap_samples.append({
                     "img": test_dataset[ptr + b][0].cpu(),
